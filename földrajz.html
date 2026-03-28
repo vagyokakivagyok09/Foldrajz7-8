@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Földrajz 🌍 — Interaktív Feladatok</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --grass: #22c55e;
+            --purple: #a855f7;
+            --blue: #38bdf8;
+            --text: #f0f0f8;
+            --card-bg: rgba(30, 30, 50, 0.7);
+            --border: rgba(255, 255, 255, 0.1);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'DM Sans', sans-serif;
+            min-height: 100vh;
+            background: #0a0a14;
+            color: var(--text);
+            overflow-x: hidden;
+            background: radial-gradient(circle at 50% 50%, #1a1a2e 0%, #0a0a14 100%);
+        }
+
+        .bg-deco, .bg-emoji-deco { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+        .particle { position: fixed; border-radius: 50%; opacity: 0.5; animation: float linear infinite; }
+        @keyframes float { from { transform: translateY(100vh) rotate(0deg); } to { transform: translateY(-10vh) rotate(360deg); } }
+
+        #app { position: relative; z-index: 10; width: 100%; max-width: 1200px; margin: 0 auto; padding: 40px 20px; text-align: center; }
+
+        header { margin-bottom: 60px; animation: fadeInDown 0.8s ease-out; }
+        @keyframes fadeInDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+
+        .logo-wrap { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 8px; }
+        .logo-icon { width: 48px; height: 48px; color: var(--grass); filter: drop-shadow(0 0 10px rgba(34, 197, 94, 0.5)); }
+        h1 { font-family: 'DM Serif Display', serif; font-size: 3.5rem; letter-spacing: -2px; line-height: 1; }
+        h1 span.green { color: var(--grass); }
+        h1 span.purple { color: var(--purple); }
+        .subheader { font-family: 'Space Grotesk', sans-serif; font-size: 0.9rem; font-weight: 500; letter-spacing: 0.3em; opacity: 0.6; text-transform: uppercase; }
+
+        /* Topic Grid */
+        .topic-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; margin-top: 40px; }
+        .topic-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 30px;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            backdrop-filter: blur(12px);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .topic-card:hover { transform: translateY(-8px); border-color: rgba(255,255,255,0.3); box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
+        .topic-card.fuves { --theme: var(--grass); }
+        .topic-card.fold { --theme: var(--purple); }
+        .topic-card.vizek { --theme: var(--blue); }
+        .topic-card::before {
+            content: ''; position: absolute; inset: 0; background: radial-gradient(circle at top right, var(--theme), transparent 60%); opacity: 0.1; transition: opacity 0.4s;
+        }
+        .topic-card:hover::before { opacity: 0.2; }
+
+        .topic-icon { font-size: 3rem; margin-bottom: 20px; filter: drop-shadow(0 0 15px var(--theme)); }
+        .topic-title { font-family: 'DM Serif Display', serif; font-size: 1.5rem; margin-bottom: 12px; color: #fff; }
+        .topic-meta { font-size: 0.85rem; opacity: 0.6; }
+        .topic-progress-bg { width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; margin-top: 20px; }
+        .topic-progress-fill { height: 100%; background: var(--theme); border-radius: 3px; box-shadow: 0 0 10px var(--theme); }
+
+        /* UI Elements (Subtopics, Modes, Game) - Simplified for Single File */
+        .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 24px; padding: 40px; backdrop-filter: blur(12px); max-width: 800px; margin: 0 auto; animation: scaleUp 0.5s ease-out; }
+        @keyframes scaleUp { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        button { cursor: pointer; transition: 0.2s; border: none; font-family: inherit; }
+        .back-btn { background: transparent; color: #fff; padding: 10px 20px; border-radius: 12px; border: 1px solid var(--border); margin-top: 30px; font-weight: 600; }
+        .back-btn:hover { background: rgba(255,255,255,0.1); }
+
+        /* Game UI */
+        .top-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 25px; gap: 10px; }
+        .stats-wrap { display: flex; gap: 10px; align-items: center; }
+        .stat-item { background: rgba(255,255,255,0.05); padding: 6px 15px; border-radius: 50px; border: 1px solid var(--border); font-size: 0.9rem; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+        .stat-item.score { color: #facc15; }
+        .stat-item.streak { color: #f97316; }
+        .stat-item.timer { color: #38bdf8; }
+        
+        .progress-container { flex-grow: 1; height: 6px; background: rgba(255,255,255,0.1); border-radius: 10px; margin: 0 15px; overflow: hidden; }
+        .progress-bar { height: 100%; background: var(--grass); transition: width 0.3s ease; box-shadow: 0 0 10px var(--grass); }
+
+        .note-btn { background: rgba(255,255,255,0.1); border: 1px solid var(--border); width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #fff; transition: 0.2s; }
+        .note-btn:hover { background: rgba(255,255,255,0.2); transform: scale(1.05); }
+
+        .ans-btn { width: 100%; padding: 20px; margin: 10px 0; border-radius: 16px; font-size: 1.1rem; font-weight: 600; background: rgba(255,255,255,0.05); color: #fff; border: 1px solid var(--border); text-align: left; transition: 0.2s; }
+        .ans-btn:hover:not(:disabled) { background: rgba(255,255,255,0.15); transform: translateX(5px); }
+        .selected-correct { background: rgba(34, 197, 94, 0.2) !important; border-color: var(--grass) !important; }
+        .selected-wrong { background: rgba(244, 63, 94, 0.2) !important; border-color: #f43f5e !important; }
+
+        /* Tananyag Overlay */
+        .tananyag-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: none; align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(10px); }
+        .tananyag-overlay.open { display: flex; }
+        .tananyag-panel { background: #1a1a2e; width: 90%; max-width: 700px; max-height: 80vh; overflow-y: auto; border-radius: 24px; border: 1px solid var(--border); padding: 40px; position: relative; }
+        .tananyag-close { position: absolute; top: 20px; right: 20px; font-size: 1.5rem; background: transparent; color: #fff; opacity: 0.5; }
+
+        /* Toast */
+        #cubeToast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(100px); background: #7c3aed; color: #fff; padding: 12px 24px; border-radius: 50px; transition: transform 0.4s; z-index: 99999; }
+        #cubeToast.show { transform: translateX(-50%) translateY(0); }
+    </style>
+</head>
+<body>
+    <div class="bg-deco" id="bgDeco"></div>
+    <div class="bg-emoji-deco" id="bgEmojiDeco"></div>
+    <div id="cubeToast"></div>
+    
+    <div id="app">
+        <header id="mainHeader">
+            <div class="logo-wrap">
+                <svg class="logo-icon" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M21,3c-3,0-8.5,1.5-13,5.5C3.5,12.5,2,18,2,18s5.5-1.5,9.5-6c4-4.5,5.5-10,5.5-10l3,3c0,0-5.5,1.5-10,5.5 c-4.5,4-6,9.5-6,9.5s5.5-1.5,9.5-6c4-4.5,5.5-10,5.5-10L21,3z"/>
+                </svg>
+                <h1><span class="green">Föld</span><span class="purple">rajz</span></h1>
+            </div>
+            <p class="subheader">7–8. ÉVFOLYAM · INTERAKTÍV FELADATOK</p>
+        </header>
+        <div id="gameArea"></div>
+    </div>
+
+    <!-- Modals -->
+    <div class="tananyag-overlay" id="tananyagOverlay" onclick="closeTananyagOnBg(event)">
+        <div class="tananyag-panel">
+            <button class="tananyag-close" onclick="closeTananyag()">✕</button>
+            <div id="tananyagBody"></div>
+        </div>
+    </div>
+
+    <script>
+        const SHEET_URL = "https://script.google.com/macros/s/AKfycbxhBeO23qbXIToArYsiquZxpxlAdidFPtjt23vKW9kP8JbJMZ3cXu6JyhsFza6vl7iH/exec";
+        const BIG_TOPICS = [
+            {
+                id: "tajejozodas", icon: "🗺️", title: "Tájékozódás a térben", style: "fold",
+                subtopics: [
+                    { id: 1, icon: "📍", title: "Mi is a térkép? – Ismétlés", ready: true,
+                        summary: "A térkép a Föld felszínének kicsinyített, egyszerűsített felülnézeti rajza, amin méréseket lehet végezni. A valóságot arányosan ábrázolja, jeleket használ az elemek megjelenítésére. A méretarány mutatja meg a kicsinyítés mértékét (pl. 1:10 000 azt jelenti, hogy 1 cm a térképen 10 000 cm a valóságban). Nagyobb méretarányú térképek részletesebbek. A távolságokat vonalzóval vagy zsinórral mérhetjük le, majd a méretarány segítségével számíthatjuk ki a valós távot. A térképen a magassági számok, színek és szintvonalak segítenek a domborzat megértésében. <br><br>💡 **Kiegészítés:** A földrajzi fokhálózat egy képzeletbeli háló a Földön (szélességi és hosszúsági körök), ami segít pontosan meghatározni a helyeket fokokban mérve.",
+                        concepts: [
+                            { t: "Térkép", d: "A Föld felszínének kicsinyített, egyszerűsített, felülnézeti ábrázolása." },
+                            { t: "Méretarány", d: "Megmutatja, hogy a térképen 1 cm mekkora távolságnak felel meg a valóságban." },
+                            { t: "Jelmagyarázat", d: "A térképen használt jelek jelentését magyarázza el." },
+                            { t: "Szintvonal", d: "Az egyenlő magasságú (tengerszint feletti) pontokat összekötő vonal." },
+                            { t: "Földrajzi fokhálózat", d: "Szélességi és hosszúsági vonalakból álló rendszer a helymeghatározáshoz. 🎯" },
+                            { t: "Keresőhálózat", d: "Betűkkel és számokkal jelölt hálózat a könnyebb kereséshez. 🎯" }
+                        ]
+                    },
+                    { id: 2, icon: "📜", title: "Milyen térképek vannak?", ready: true,
+                        summary: "A térképeket leggyakrabban tartalmuk szerint csoportosítjuk: <b>Földrajzi térképek</b> (kontinensek, országok), <b>Topográfiai térképek</b> (nagyon részletes, pl. turistatérkép) és <b>Tematikus térképek</b> (egy-egy témát, pl. éghajlatot vagy népsűrűséget mutatnak be). Ma már elkülönítjük a papíralapú és a digitális térképeket is. A digitálisak lehetnek statikusak (nem változó), dinamikusak (adatbázis alapján frissülő) vagy interaktívak (pl. útvonaltervező), ahol a felhasználó is alakíthatja a tartalmat.<br><br>💡 **Kiegészítés:** A dinamikus térképek szuperek, mert mindig a legfrissebb adatokat mutatják (pl. élő esőfelhő-térkép vagy forgalmi dugók jelzése).",
+                        concepts: [
+                            { t: "Földrajzi térkép", d: "Kontinenseket, országokat, tájakat mutat be." },
+                            { t: "Topográfiai térkép", d: "Részletes helyszínrajzi térkép terepi felmérések alapján." },
+                            { t: "Tematikus térkép", d: "Egy terület egyetlen kiválasztott jellemzőjét ábrázolja (pl. éghajlat)." },
+                            { t: "Interaktív térkép", d: "A felhasználó által alakítható digitális térkép (pl. GPS)." },
+                            { t: "Méretarány", d: "A térképi és a valós távolság közötti arány. 🎯" },
+                            { t: "Jelmagyarázat", d: "A jelek és színek jelentésének magyarázata. 🎯" }
+                        ]
+                    },
+                    { id: 3, icon: "🧭", title: "Koordináta-rendszer a Földön", ready: true,
+                        summary: "A Földön a pontos helymeghatározást a <b>földrajzi fokhálózat</b> segíti. A <b>szélességi körök</b> az Egyenlítővel (0°) párhuzamosak, északra és délre 90-90 fokig számozzuk őket. A <b>hosszúsági körök</b> (délkörök) az Északi- és Déli-sarkot kötik össze, a kezdő kör Greenwich-en halad át (0°), tőle keletre és nyugatra 180-180 fokig terjednek. Egy hely pontos koordinátáit e két érték (pl. é. sz. 47°, k. h. 19°) adja meg.<br><br>💡 **Kiegészítés:** A méretarány segít 'lekicsinyíteni' a Földet; ha 1:100.000, akkor 1 cm a térképen 1 km a valóságban.",
+                        concepts: [
+                            { t: "Földrajzi fokhálózat", d: "Szélességi és hosszúsági körök rendszere a helymeghatározáshoz. 🎯" },
+                            { t: "Egyenlítő", d: "A Földet két egyenlő félgömbre osztó, 0 fokos szélességi kör." },
+                            { t: "Kezdő hosszúsági kör", d: "A Greenwich-en áthaladó 0 fokos meridián." },
+                            { t: "Földrajzi koordináták", d: "A szélességi és hosszúsági értékek együttese." },
+                            { t: "Tényleges földrajzi hely", d: "Egy hely pontos helye a koordináták alapján megadva. 🎯" }
+                        ]
+                    },
+                    { id: 4, icon: "📸", title: "Légből készült képek", ready: true,
+                        summary: "A <b>távérzékelés</b> során anélkül gyűjtünk adatokat a Földről, hogy odamennénk. A <b>légi felvételek</b> (repülőről, drónról) részletesek és frissek, segítik a térképészeket és a mezőgazdaságot. Az <b>űrfelvételek</b> (műholdakról) egyszerre hatalmas területeket látnak. A műholdak segítenek az időjárás előrejelzésében, a távközlésben and a GPS-alapú navigációban is. A <b>Google Föld</b> programmal bárki felfedezheti a bolygót ezeken a felvételeken keresztül.<br><br>💡 **Kiegészítés:** A fokhálózat olyan, mint egy hatalmas sakktábla a Földre rajzolva, ahol minden mezőnek pontos címe van.",
+                        concepts: [
+                            { t: "Távérzékelés", d: "Információgyűjtés a felszínről távoli eszközökkel." },
+                            { t: "Műholdkép", d: "Műholdak által készített felvétel hatalmas területekről." },
+                            { t: "Műhold", d: "A Föld körül keringő mesterséges égitest. 🎯" },
+                            { t: "GPS", d: "Műholdas globális helymeghatározó rendszer. 🎯" },
+                            { t: "Légi felvétel", d: "A levegőből készült fénykép a felszín változásairól." }
+                        ]
+                    }
+                ]
+            },
+            {
+                id: "lakokornyezet", icon: "🏠", title: "Közvetlen lakókörnyezetünk", style: "fuves",
+                subtopics: [
+                    { id: 5, icon: "🏙️", title: "A lakóhely földrajza", ready: true,
+                        summary: "A települések olyan helyek, ahol az emberek élnek, dolgoznak és szolgáltatásokat vesznek igénybe. Helyüket természeti (víz, éghajlat, talaj) és társadalmi (közlekedés, kereskedelem) tényezők határozzák meg. Lehetnek <b>szórványtelepülések</b> (tanya, farm) vagy <b>csoportosak</b> (falu, város). A település életét a polgármester vezette önkormányzat irányítja, feladatuk a közterületek rendben tartása, az utak fejlesztése és a környezetvédelem. <br><br>💡 **Kiegészítés:** A kulturális és természeti értékek (múzeumok, erdők) megőrzése alapvető a település élhetőségéhez.",
+                        concepts: [
+                            { t: "Település", d: "Lakóházakból, közösségből és munkahelyekből álló lakóhely." },
+                            { t: "Szórványtelepülés", d: "Ritkán lakott, magányos épületekből álló terület (pl. tanya)." },
+                            { t: "Önkormányzat", d: "A település irányításáért és működéséért felelős szerv." },
+                            { t: "Polgármester", d: "Az önkormányzati munka vezetője." },
+                            { t: "Természeti tényezők", d: "A település helyét meghatározó természeti adottságok. 🎯" },
+                            { t: "Társadalmi tényezők", d: "Emberi hatások (közlekedés, gazdaság) a településre. 🎯" }
+                        ]
+                    },
+                    { id: 6, icon: "🏛️", title: "Természeti és kulturális értékeink", ready: true,
+                        summary: "Értékeinket két fő csoportra osztjuk: <b>természeti erőforrások</b> (amiket a gazdaságban használunk, pl. víz, ásványkincsek) és <b>természeti értékek</b> (amiket szépségük vagy ritkaságuk miatt védünk, pl. barlangok). A <b>kulturális értékek</b> az ember alkotta kincseink (műemlékek, hagyományok). Védelmük érdekében nemzeti parkokat és tájvédelmi körzeteket hozunk létre, a legfontosabbak pedig a Világörökség részét képezik.<br><br>💡 **Kiegészítés:** Az erőforrásokkal (fa, víz) okosan kell gazdálkodnunk, hogy a jövő generációinak is maradjon belőlük (fenntarthatóság).",
+                        concepts: [
+                            { t: "Nemzeti park", d: "Természeti és táji értékek védelmére kijelölt terület." },
+                            { t: "Tájvédelmi körzet", d: "A táj jellegzetességeit óvó védett terület." },
+                            { t: "Világörökség", d: "Az egész emberiség számára kiemelkedő értéket képviselő helyszín." },
+                            { t: "Táj", d: "A természeti és emberi környezet egységes egésze. 🎯" },
+                            { t: "Erőforrás", d: "Minden, ami a szükségleteink kielégítésére felhasználható. 🎯" }
+                        ]
+                    },
+                    { id: 7, icon: "👨‍👩‍👧‍👦", title: "Népesség", ready: true,
+                        summary: "A népesség száma folyamatosan változik a születések, halálozások és a vándorlás (beköltözés, elköltözés) miatt. A <b>népsűrűség</b> megmutatja, milyen sűrűn lakott egy terület. A lakosság összetételét (kor, nem) a <b>korfa</b> segítségével ábrázoljuk. Csoportosíthatjuk az embereket gazdasági szerepük (eltartottak, foglalkoztatottak, munkanélküliek) vagy nemzetiségük és vallásuk szerint is.<br><br>💡 **Kiegészítés:** A területi fejlettség-különbségek miatt az emberek gyakran vándorolnak a gazdagabb, több munkát kínáló vidékekre.",
+                        concepts: [
+                            { t: "Népszámlálás", d: "Hivatalos adatgyűjtés a lakosság számáról és jellemzőiről. 🎯" },
+                            { t: "Népsűrűség", d: "1 négyzetkilométerre jutó lakosok átlagos száma. 🎯" },
+                            { t: "Természetes szaporodás", d: "Ha több ember születik, mint ahány meghal. 🎯" },
+                            { t: "Korfa", d: "A népesség kor és nem szerinti eloszlását mutató diagram. 🎯" },
+                            { t: "Nemzetiség", d: "A többségi nemzettől eltérő nyelvű vagy kultúrájú csoport. 🎯" }
+                        ]
+                    },
+                    { id: 8, icon: "🏭", title: "Miből, hogyan gazdálkodunk?", ready: true,
+                        summary: "A gazdaság célja az emberi szükségletek kielégítése termeléssel és szolgáltatással. Három fő ágazata van: a <b>mezőgazdaság</b> (élelemtermelés, állattenyésztés, növénytermesztés), az <b>iper</b> (alapanyagok feldolgozása, gépgyártás, vegyipar) és a <b>szolgáltatások</b> (kereskedelem, közlekedés, egészségügy). Ma már a modern társadalmakban a szolgáltatások területén dolgoznak a legtöbben.<br><br>💡 **Kiegészítés:** A tájat a természeti adottságok és a gazdasági tevékenységek (szántók, gyárak, utak) együtt formálják.",
+                        concepts: [
+                            { t: "Gazdaság", d: "A szükségletek kielégítésére irányuló tevékenységek összessége. 🎯" },
+                            { t: "Ipar", d: "Anyagok feldolgozása és termékek gyártása üzemekben. 🎯" },
+                            { t: "Szolgáltatások", d: "Segítséget, kényelmet nyújtó nem anyagi tevékenységek. 🎯" },
+                            { t: "Energiahordozó", d: "Energiatermelésre alkalmas anyagok (szén, olaj, gáz). 🎯" },
+                            { t: "Közlekedés", d: "Emberek és áruk egyik helyről a másikra szállítása. 🎯" }
+                        ]
+                    },
+                    { id: 9, icon: "🌍", title: "A lakóhely környezeti kihívásai", ready: true,
+                        summary: "A modern élet számos környezeti problémával jár, mint például a <b>levegőszennyezés</b> (közlekedés, ipar, fűtés miatt) és a <b>szmog</b> (füstköd) kialakulása. A túl sok szén-dioxid fokozza az <b>üvegházhatást</b>, ami globális felmelegedéshez vezet. Fontos a <b>fenntartható fejlődés</b>: úgy kell élnünk és gazdálkodnunk, hogy a jövő generációinak is maradjanak tiszta erőforrások.<br><br>💡 **Kiegészítés:** Környezeti értékeink (tiszta víz, erdők) védelme közös felelősségünk, hogy a bolygónk élhető maradjon.",
+                        concepts: [
+                            { t: "Szennyezés", d: "Környezetbe kerülő káros anyagok (pl. füst, hulladék)." },
+                            { t: "Üvegházhatás", d: "A légkör hőmegtartó képessége, amit egyes gázok fokoznak." },
+                            { t: "Fenntartható fejlődés", d: "Hosszú távon is fenntartható, környezetkímélő fejlődés. 🎯" },
+                            { t: "Környezeti érték", d: "Minden védelemre méltó természeti vagy kulturális kincs. 🎯" },
+                            { t: "Szmog", d: "A nagyvárosok felett kialakuló egészségtelen füstköd." }
+                        ]
+                    }
+                ]
+            },
+            {
+                id: "magyarorszag", icon: "🇭🇺", title: "Magyarország földrajza", style: "vizek",
+                subtopics: [
+                    { id: 10, icon: "🗺️", title: "Hazánk, Magyarország", ready: true },
+                    { id: 11, icon: "💧", title: "Vizeink a felszínen és a felszín alatt", ready: true },
+                    { id: 12, icon: "💎", title: "Természeti kincseink", ready: true },
+                    { id: 13, icon: "🏔️", title: "Középhegységeink", ready: true },
+                    { id: 14, icon: "🌾", title: "Alföldi tájakon", ready: true },
+                    { id: 15, icon: "🌳", title: "Dombságok a Dunántúlon", ready: true },
+                    { id: 16, icon: "🏰", title: "Települések Magyarországon", ready: true },
+                    { id: 17, icon: "🌉", title: "Fővárosunk, Budapest", ready: true },
+                    { id: 18, icon: "📉", title: "Magyarország népessége", ready: true },
+                    { id: 21, icon: "🚜", title: "Mezőgazdaság és élelmiszeripar", ready: true },
+                    { id: 22, icon: "⚙️", title: "Energiagazdaság (Nem megújuló)", ready: true },
+                    { id: 23, icon: "♻️", title: "Energiagazdaság (Megújuló)", ready: true },
+                    { id: 24, icon: "🏭", title: "Az ipar és környezeti hatásai", ready: true },
+                    { id: 25, icon: "🛣️", title: "Infrastruktúra", ready: true },
+                    { id: 26, icon: "🧪", title: "Kutatás-fejlesztés", ready: true },
+                    { id: 27, icon: "🏖️", title: "Turizmus", ready: true }
+                ]
+            },
+            {
+                id: "karpat", icon: "⛰️", title: "A Kárpát-medence térsége", style: "fold",
+                subtopics: [
+                    { id: 31, icon: "🏰", title: "A Kárpát-medence térsége", ready: true },
+                    { id: 32, icon: "⚒️", title: "A Kárpátok kialakulása", ready: true },
+                    { id: 33, icon: "🌋", title: "Természeti erőforrások", ready: true },
+                    { id: 34, icon: "🍂", title: "Táji és kulturális értékek", ready: true },
+                    { id: 35, icon: "👥", title: "Népesség", ready: true }
+                ]
+            },
+            {
+                id: "europa", icon: "🇪🇺", title: "Európa földrajza", style: "vizek",
+                subtopics: [
+                    { id: 37, icon: "🌍", title: "Európa fekvése, határai", ready: true },
+                    { id: 38, icon: "⛅", title: "Részei, éghajlata", ready: true },
+                    { id: 39, icon: "🚶", title: "Népessége és országai", ready: true },
+                    { id: 40, icon: "🇪🇺", title: "Az Európai Unió", ready: true },
+                    { id: 42, icon: "❄️", title: "Észak-Európa", ready: true },
+                    { id: 43, icon: "🏴󠁧󠁢󠁥󠁮󠁧󠁿", title: "Az Egyesült Királyság", ready: true },
+                    { id: 44, icon: "🇫🇷", title: "Franciaország", ready: true },
+                    { id: 45, icon: "🇮🇹", title: "Dél-Európa", ready: true },
+                    { id: 48, icon: "🇩🇪", title: "Németország", ready: true },
+                    { id: 50, icon: "🏔️", title: "Ausztria és Svájc", ready: true },
+                    { id: 53, icon: "🇷🇴", title: "Románia", ready: true },
+                    { id: 57, icon: "🇷🇺", title: "Oroszország", ready: true }
+                ]
+            },
+            {
+                id: "europa_kivul", icon: "🌏", title: "Európán kívüli térségek", style: "fuves",
+                subtopics: [
+                    { id: 59, icon: "🦓", title: "Afrika földrajza", ready: true },
+                    { id: 62, icon: "🏜️", title: "Amerika földrajza", ready: true },
+                    { id: 65, icon: "🏙️", title: "Az USA", ready: true },
+                    { id: 67, icon: "🕺", title: "Latin-Amerika", ready: true },
+                    { id: 69, icon: "🥢", title: "Ázsia földrajza", ready: true },
+                    { id: 72, icon: "⛩️", title: "Japán és Délkelet-Ázsia", ready: true },
+                    { id: 74, icon: "🐉", title: "Kína", ready: true },
+                    { id: 75, icon: "🕌", title: "India", ready: true },
+                    { id: 77, icon: "🦘", title: "Ausztrália és Óceánia", ready: true },
+                    { id: 78, icon: "🧊", title: "Sarkvidékek", ready: true },
+                    { id: 79, icon: "🌊", title: "A világtenger", ready: true }
+                ]
+            },
+            {
+                id: "ovezetesseg", icon: "☀️", title: "Földrajzi övezetesség", style: "fold",
+                subtopics: [
+                    { id: 81, icon: "🔄", title: "Az övezetesség rendszere", ready: true },
+                    { id: 82, icon: "🔥", title: "A forró övezet", ready: true },
+                    { id: 83, icon: "⛅", title: "Mérsékelt övezet 1.", ready: true },
+                    { id: 84, icon: "🌦️", title: "Az őshonos füves puszták kialakulása, növényei", ready: true,
+                        summary: "Az őshonos puszták nemcsak az Alföldön, hanem az Északi- és a Dunántúli-középhegység melegebb, déli oldalain is megtalálhatók. Emberi beavatkozás nélkül jöttek létre: a kevés csapadék, a forró nyár és a talajviszonyok miatt a fák nem tudtak megtelepedni. A puszta uralkodó növényei a pázsitfűfélék, amelyek tökéletesen alkalmazkodtak a szeles, száraz körülményekhez. Bojtos (mellékgyökérű) gyökérzetük szorosan kapaszkodik a talajba, üreges, hajlékony szalmaszáruk ellenáll a szélnek, szárolelő leveleik védik és merevítik a szárat. Virágzataik aprók, feltűnésmentes — beporzásukat a szél végzi. Konkrét fajok: az angolperje alacsony, taposástűrő legelőfű; a siskanád magasabb, sűrű csomókban nő, szárazságtűrő; a mezeizsálya lila virágú, illatos gyógynövény, szőrös levelei csökkentik a párolgást. A mélyebb fekvésű, állandóan nedves területeken mocsárrétek alakulnak ki — buja növényzettel. Jellegzetes lakói: a mocsári zsurló (spórás, érdes szárú, mérgező!), valamint a réti boglárka (frissen mérgező, szárítva ártalmatlan).",
+                        concepts: [
+                            { t: "Mellékgyökérzet (bojtos gyökér)", d: "A pázsitfűfélék gyökérrendszere — sok vékony gyökér szorosan kapaszkodik a talajba, gyorsan felszívja a felszíni nedvességet, és gátolja az eróziót." },
+                            { t: "Szalmaszár", d: "A pázsitfűfélék üreges, hajlékony szára — bütykök merevítik, és éppen hajlékonysága miatt ellenáll a folyamatos szélnek." },
+                            { t: "Szárolelő levél", d: "A levélhüvely rásimul a szárra, védve és merevítve azt — a pázsitfűfélék jellegzetes levéltípusa." },
+                            { t: "Szélbeporzás", d: "A pázsitfűfélék virágai aprók, feltűnésmentesek — nem a rovarok, hanem a szél viszi át a pollent." },
+                            { t: "Angolperje", d: "Alacsony termetű, taposást jól tűrő pázsitfűféle — fontos legelőfű, a háziállatok kedvelik." },
+                            { t: "Siskanád", d: "Magasabb termetű, sűrű csomókban növő fűféle — jól bírja a szárazabb időszakokat is." }
+                        ],
+                        tf: [
+                            { text: "A préri az észak-amerikai füves puszta neve.", answer: true, explain: "Helyes! Indián eredetű szó, rétet jelent." },
+                            { text: "A füves pusztákon nagyon sok eső esik egész évben.", answer: false, explain: "Nem, a csapadék kevés, ezért nem nőnek fák." },
+                            { text: "A pázsitfűfélék szárát bütykök merevítik.", answer: true, explain: "Így van, a szalmaszár üreges, de a bütykök erőssé teszik." },
+                            { text: "A pázsitfűfélék porzását rovarok végzik.", answer: false, explain: "Nem, a porzást a szél végzi (szélbeporzás)." },
+                            { text: "A mezeizsálya szőrös levelei csökkentik a párolgást.", answer: true, explain: "Igen, ez egy fontos alkalmazkodás a szárazsághoz." }
+                        ],
+                        quiz: [
+                            { text: "Hogy hívják a füves pusztát Dél-Amerikában?", opts: ["Préri", "Sztyepp", "Pampa", "Szavanna"], correct: 2, explain: "A pampa argentin területen elterülő óriási füves síkság." },
+                            { text: "Melyik növény taposástűrő és alacsony növésű?", opts: ["Siskanád", "Angolperje", "Mezeizsálya", "Mocsári zsurló"], correct: 1, explain: "Az angolperje alacsony és jól bírja a taposást." },
+                            { text: "Milyen a pázsitfűfélék gyökérzete?", opts: ["Karógyökér", "Főgyökérzet", "Bojtos gyökérzet", "Léggyökérzet"], correct: 2, explain: "Sok vékony gyökérből áll, ami jól megköti a talajt." }
+                        ]
+                    },
+                    { id: 85, icon: "🏔️", title: "Hideg övezet", ready: true }
+                ]
+            },
+            {
+                id: "gazdasag", icon: "💰", title: "Életünk és a gazdaság", style: "fold",
+                subtopics: [
+                    { id: 88, icon: "🏢", title: "A gazdaság működése", ready: true },
+                    { id: 89, icon: "🌐", title: "Globalizáció", ready: true },
+                    { id: 90, icon: "🍃", title: "Fenntartható gazdálkodás", ready: true },
+                    { id: 91, icon: "💸", title: "A pénz az életünkben", ready: true }
+                ]
+            }
+        ];
+
+        let playerName = localStorage.getItem('geoPlayerName') || '';
+        let currentBigTopic = null;
+        let currentTopic = null;
+        let mode = '';
+        let current = 0;
+        let score = 0;
+        let streak = 0;
+        let bestStreak = 0;
+        let answered = false;
+        let timerInterval = null;
+        let elapsedSeconds = 0;
+        let startTime = 0;
+        let shuffledQuestions = [];
+
+        function showBigTopics() {
+            document.getElementById('mainHeader').style.display = 'block';
+            const area = document.getElementById('gameArea');
+            if (!playerName) { renderNameScreen(); return; }
+            
+            let gridHTML = '';
+            BIG_TOPICS.forEach(topic => {
+                gridHTML += `
+                <div class="topic-card ${topic.style}" onclick="showSubtopics('${topic.id}')">
+                    <span class="topic-icon">${topic.icon}</span>
+                    <div class="topic-title">${topic.title}</div>
+                    <div class="topic-meta">${topic.subtopics.length} altéma</div>
+                    <div class="topic-progress-bg"><div class="topic-progress-fill" style="width: 0%"></div></div>
+                </div>`;
+            });
+
+            area.innerHTML = `
+                <div class="topic-box">
+                    <h2 style="margin-bottom: 20px; font-family: 'DM Serif Display';">Szia, ${playerName}! 👋</h2>
+                    <div class="topic-grid">${gridHTML}</div>
+                </div>`;
+            applyTheme(null);
+        }
+
+        function renderNameScreen() {
+            document.getElementById('gameArea').innerHTML = `
+                <div class="card">
+                    <h1>Üdvözöllek! 👋</h1>
+                    <p style="margin: 20px 0; opacity: 0.7;">Add meg a neved a kezdéshez:</p>
+                    <input type="text" id="nameInp" placeholder="Neved helye..." oninput="checkNameInput()" style="padding: 15px; border-radius: 12px; border: 1px solid var(--border); background: rgba(255,255,255,0.05); color: #fff; width: 100%; max-width: 300px; text-align: center; margin-bottom: 20px;">
+                    <br>
+                    <button id="startNameBtn" class="back-btn" onclick="saveName()" disabled style="background: rgba(34, 197, 94, 0.3); border: none; padding: 15px 40px; font-size: 1.1rem; opacity: 0.5; cursor: not-allowed;">Indítás</button>
+                </div>`;
+        }
+
+        function checkNameInput() {
+            const val = document.getElementById('nameInp').value.trim();
+            const btn = document.getElementById('startNameBtn');
+            if (val.length >= 2) {
+                btn.disabled = false;
+                btn.style.opacity = '1';
+                btn.style.background = 'var(--grass)';
+                btn.style.cursor = 'pointer';
+            } else {
+                btn.disabled = true;
+                btn.style.opacity = '0.5';
+                btn.style.background = 'rgba(34, 197, 94, 0.3)';
+                btn.style.cursor = 'not-allowed';
+            }
+        }
+
+        function saveName() {
+            const val = document.getElementById('nameInp').value.trim();
+            if(!val) return;
+            playerName = val;
+            localStorage.setItem('geoPlayerName', playerName);
+            showBigTopics();
+        }
+
+        function showSubtopics(id) {
+            currentBigTopic = BIG_TOPICS.find(t => t.id === id);
+            applyTheme(id);
+            document.getElementById('mainHeader').style.display = 'none';
+            let gridHTML = '';
+            currentBigTopic.subtopics.forEach(sub => {
+                const hasTF = sub.tf && sub.tf.length > 0;
+                const hasQuiz = sub.quiz && sub.quiz.length > 0;
+                const hasContent = hasTF || hasQuiz || sub.summary;
+                const badge = hasTF || hasQuiz 
+                    ? `<span style="margin-left: auto; font-size: 0.7rem; background: rgba(34,197,94,0.15); color: #22c55e; border: 1px solid rgba(34,197,94,0.3); border-radius: 50px; padding: 3px 10px;">✅ Kész</span>`
+                    : `<span style="margin-left: auto; font-size: 0.7rem; background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 50px; padding: 3px 10px;">🚧 Hamarosan</span>`;
+                gridHTML += `
+                <div class="ans-btn" onclick="showModes(${sub.id})" style="display: flex; align-items: center;">
+                    <span style="font-size: 1.2rem; margin-right: 15px;">${sub.icon}</span>
+                    <span>${sub.title}</span>
+                    ${badge}
+                </div>`;
+            });
+            document.getElementById('gameArea').innerHTML = `
+                <div class="card" style="text-align: left;">
+                    <h1 style="margin-bottom: 30px;">${currentBigTopic.icon} ${currentBigTopic.title}</h1>
+                    ${gridHTML}
+                    <button class="back-btn" onclick="showBigTopics()">← Vissza</button>
+                </div>`;
+        }
+
+        function showModes(subId) {
+            currentTopic = currentBigTopic.subtopics.find(t => t.id === subId);
+            const theme = THEMES[currentBigTopic.style]?.color || '#fff';
+            const hasTF = currentTopic.tf && currentTopic.tf.length > 0;
+            const hasQuiz = currentTopic.quiz && currentTopic.quiz.length > 0;
+            const hasSummary = currentTopic.summary || currentTopic.note;
+
+            const tfStyle = hasTF ? 'onclick="startGame(\'tf\')"' : 'onclick="showComingSoon()" style="opacity:0.4; cursor: not-allowed;"';
+            const quizStyle = hasQuiz ? 'onclick="startGame(\'quiz\')"' : 'onclick="showComingSoon()" style="opacity:0.4; cursor: not-allowed;"';
+            const comingBadge = (!hasTF && !hasQuiz) ? `<div style="background: rgba(234,179,8,0.1); border: 1px solid rgba(234,179,8,0.3); border-radius: 12px; padding: 12px 20px; margin-bottom: 20px; font-size: 0.85rem; color: #eab308;">🚧 Ehhez az altémához még készülnek a kérdések</div>` : '';
+            
+            document.getElementById('gameArea').innerHTML = `
+                <div class="card" style="max-width: 900px;">
+                    <h2 style="font-family: 'DM Serif Display'; font-size: 2rem; margin-bottom: 5px;">
+                        ${currentTopic.icon} ${currentTopic.title}
+                    </h2>
+                    <p style="opacity: 0.5; font-size: 0.8rem; letter-spacing: 0.1em; margin-bottom: 30px;">
+                        MELYIK JÁTÉKMÓDOT VÁLASZTOD?
+                    </p>
+
+                    ${comingBadge}
+
+                    ${hasSummary ? `<button class="ans-btn" style="text-align: center; border-color: var(--purple); margin-bottom: 30px; background: rgba(168, 85, 247, 0.1);" onclick="openTananyag()">
+                        📖 Tananyag megtekintése
+                    </button>` : ''}
+
+                    <div class="topic-grid" style="grid-template-columns: repeat(2, 1fr); gap: 20px;">
+                        <div class="topic-card" style="--theme: #22c55e;" ${tfStyle}>
+                            <span class="topic-icon" style="font-size: 2rem;">✅</span>
+                            <div class="topic-title" style="font-size: 1.1rem; margin-bottom: 4px;">Igaz vagy Hamis?</div>
+                            <div class="topic-meta">${hasTF ? currentTopic.tf.length + ' állítás' : 'Hamarosan'}</div>
+                        </div>
+                        <div class="topic-card" style="--theme: #f43f5e;" ${quizStyle}>
+                            <span class="topic-icon" style="font-size: 2rem;">🧠</span>
+                            <div class="topic-title" style="font-size: 1.1rem; margin-bottom: 4px;">Kvíz</div>
+                            <div class="topic-meta">${hasQuiz ? currentTopic.quiz.length + ' kérdés' : 'Hamarosan'}</div>
+                        </div>
+                        <div class="topic-card" style="--theme: #eab308; opacity:0.4; cursor:not-allowed;" onclick="showComingSoon()">
+                            <span class="topic-icon" style="font-size: 2rem;">✏️</span>
+                            <div class="topic-title" style="font-size: 1.1rem; margin-bottom: 4px;">Lyukas szöveg</div>
+                            <div class="topic-meta">Hamarosan</div>
+                        </div>
+                        <div class="topic-card" style="--theme: #38bdf8; opacity:0.4; cursor:not-allowed;" onclick="showComingSoon()">
+                            <span class="topic-icon" style="font-size: 2rem;">🔢</span>
+                            <div class="topic-title" style="font-size: 1.1rem; margin-bottom: 4px;">Sorrendbe állítás</div>
+                            <div class="topic-meta">Hamarosan</div>
+                        </div>
+                        <div class="topic-card" style="--theme: #a855f7; opacity:0.4; cursor:not-allowed;" onclick="showComingSoon()">
+                            <span class="topic-icon" style="font-size: 2rem;">📁</span>
+                            <div class="topic-title" style="font-size: 1.1rem; margin-bottom: 4px;">Kategorizálás</div>
+                            <div class="topic-meta">Hamarosan</div>
+                        </div>
+                        <div class="topic-card" style="--theme: #94a3b8; cursor: default; opacity: 0.8;">
+                            <span class="topic-icon" style="font-size: 2rem;">🎯</span>
+                            <div class="topic-title" style="font-size: 1.1rem; margin-bottom: 4px;">Kompetencia</div>
+                            <div class="topic-meta">Készségfejlesztés</div>
+                        </div>
+                    </div>
+
+                    <button class="back-btn" onclick="showSubtopics('${currentBigTopic.id}')">← Vissza</button>
+                </div>`;
+        }
+
+        function startGame(m) {
+            mode = m; current = 0; score = 0; streak = 0; answered = false;
+            startTime = Date.now();
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+            }, 1000);
+            const questions = mode === 'tf' ? currentTopic.tf : currentTopic.quiz;
+            if (!questions || questions.length === 0) {
+                showComingSoon();
+                return;
+            }
+            shuffledQuestions = [...questions].sort(() => Math.random() - 0.5);
+            render();
+        }
+
+        function showComingSoon() {
+            clearInterval(timerInterval);
+            document.getElementById('gameArea').innerHTML = `
+                <div class="card" style="text-align: center;">
+                    <div style="font-size: 4rem; margin-bottom: 20px;">🚧</div>
+                    <h2 style="font-family: 'DM Serif Display'; font-size: 2rem; margin-bottom: 15px;">Hamarosan!</h2>
+                    <p style="opacity: 0.6; line-height: 1.6; margin-bottom: 30px;">
+                        Ehhez az altémához (<b>${currentTopic.title}</b>) még nem készültek el a kérdések.<br>
+                        Hamarosan feltöltjük! 🎯
+                    </p>
+                    <button class="back-btn" onclick="showSubtopics('${currentBigTopic.id}')">← Vissza az altémákhoz</button>
+                </div>`;
+        }
+
+        function render() {
+            const area = document.getElementById('gameArea');
+            if (current >= shuffledQuestions.length) {
+                showResults();
+                return;
+            }
+            const q = shuffledQuestions[current];
+            const progress = ((current) / shuffledQuestions.length) * 100;
+            
+            let ansHTML = '';
+            if (mode === 'tf') {
+                ansHTML = `<button class="ans-btn" id="btnTrue" onclick="checkTF(true)">✅ IGAZ</button>
+                           <button class="ans-btn" id="btnFalse" onclick="checkTF(false)">❌ HAMIS</button>`;
+            } else {
+                q.opts.forEach((o, i) => { ansHTML += `<button class="ans-btn" id="opt${i}" onclick="checkQuiz(${i})">${o}</button>`; });
+            }
+
+            area.innerHTML = `
+                <div class="card" style="text-align: left; max-width: 900px;">
+                    <div class="top-bar">
+                        <button class="back-btn" style="margin:0; padding: 5px 12px; font-size: 0.7rem;" onclick="showBigTopics()">🏠 Módok</button>
+                        <span style="font-weight: 700; opacity: 0.8;">${current+1} / ${shuffledQuestions.length}</span>
+                        <div class="progress-container"><div class="progress-bar" style="width: ${progress}%"></div></div>
+                        <div class="stats-wrap">
+                            <div class="stat-item score">🌟 <span>${score}</span></div>
+                            <div class="stat-item streak">🔥 <span>${streak}</span></div>
+                            <div class="stat-item timer">⏱️ <span id="gameTimer">${elapsedSeconds} mp</span></div>
+                            <button class="note-btn" onclick="openTananyag()">📖</button>
+                        </div>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 25px; margin-bottom: 20px;">
+                        <p style="font-size: 0.8rem; opacity: 0.5; margin-bottom: 10px;">📄 ${current+1}. kérdés — fdfs</p>
+                        <h3 style="line-height: 1.4;">${q.text}</h3>
+                    </div>
+                    ${ansHTML}
+                    <div id="feedback" style="margin-top: 20px; font-weight: 600; min-height: 24px;"></div>
+                    <button class="back-btn" id="nextBtn" style="display:none; width: 100%; border-color: var(--grass); color: var(--grass); background: rgba(34, 197, 94, 0.1);" onclick="next()">Következő kérdés ➡️</button>
+                </div>`;
+            
+            // Start UI timer update
+            if(timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+                const timerEl = document.getElementById('gameTimer');
+                if(timerEl) timerEl.innerText = elapsedSeconds + " mp";
+            }, 1000);
+        }
+
+        function checkTF(val) {
+            if(answered) return; answered = true;
+            const q = shuffledQuestions[current];
+            const correct = val === q.answer;
+            if(correct) {
+                score++;
+                streak++;
+                if(streak > bestStreak) bestStreak = streak;
+                document.getElementById(val ? 'btnTrue' : 'btnFalse').classList.add('selected-correct');
+            } else {
+                streak = 0;
+                document.getElementById(val ? 'btnTrue' : 'btnFalse').classList.add('selected-wrong');
+                document.getElementById(q.answer ? 'btnTrue' : 'btnFalse').classList.add('selected-correct');
+            }
+            document.getElementById('feedback').textContent = correct ? "✅ Helyes! " + q.explain : "❌ Nem egészen. " + q.explain;
+            document.getElementById('nextBtn').style.display = 'block';
+        }
+
+        function checkQuiz(i) {
+            if(answered) return; answered = true;
+            const q = shuffledQuestions[current];
+            const correct = i === q.correct;
+            if(correct) {
+                score++;
+                streak++;
+                if(streak > bestStreak) bestStreak = streak;
+                document.getElementById('opt'+i).classList.add('selected-correct');
+            } else {
+                streak = 0;
+                document.getElementById('opt'+i).classList.add('selected-wrong');
+                document.getElementById('opt'+q.correct).classList.add('selected-correct');
+            }
+            // Disable all buttons
+            q.opts.forEach((_, idx) => {
+                const btn = document.getElementById('opt'+idx);
+                if(btn) btn.disabled = true;
+            });
+            document.getElementById('feedback').textContent = correct ? "✅ Helyes! " + q.explain : "❌ Nem egészen. " + q.explain;
+            document.getElementById('nextBtn').style.display = 'block';
+        }
+
+        function next() { current++; answered = false; render(); }
+
+        function showResults() {
+            clearInterval(timerInterval);
+            document.getElementById('gameArea').innerHTML = `
+                <div class="card">
+                    <h1>Kész! 🏆</h1>
+                    <h2 style="margin: 20px 0;">${score} / ${shuffledQuestions.length} helyes válasz</h2>
+                    <button class="back-btn" onclick="showBigTopics()">🏠 Főmenü</button>
+                </div>`;
+        }
+
+        function openTananyag() {
+            const overlay = document.getElementById('tananyagOverlay');
+            const body = document.getElementById('tananyagBody');
+            
+            let conceptHTML = '';
+            if (currentTopic.concepts) {
+                conceptHTML = `
+                    <p style="color: #eab308; font-weight: 700; font-size: 0.8rem; letter-spacing: 0.1em; margin-top: 30px; margin-bottom: 20px;">🔑 FONTOS FOGALMAK</p>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
+                        ${currentTopic.concepts.map(c => `
+                            <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 15px; border-left: 4px solid var(--grass);">
+                                <div style="color: var(--grass); font-weight: 700; font-size: 0.9rem; margin-bottom: 5px;">${c.t}</div>
+                                <div style="font-size: 0.8rem; opacity: 0.8;">${c.d}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+
+            body.innerHTML = `
+                <div style="text-align: center; margin-bottom: 30px;">
+                    <h2 style="font-family: 'DM Serif Display'; font-size: 1.8rem; margin-bottom: 5px;">
+                        ${currentTopic.icon} ${currentTopic.title}
+                    </h2>
+                    <p style="opacity: 0.5; font-size: 0.7rem; letter-spacing: 0.1em;">OLVASD EL, MAJD INDÍTSD EL A FELADATOT!</p>
+                </div>
+                
+                <hr style="opacity: 0.1; margin-bottom: 20px;">
+                
+                <p style="color: var(--grass); font-weight: 700; font-size: 0.8rem; letter-spacing: 0.1em; margin-bottom: 15px;">📝 ÖSSZEFOGLALÓ</p>
+                <div style="line-height: 1.6; color: #cbd5e1; text-align: justify; font-size: 0.95rem;">
+                    ${currentTopic.summary || currentTopic.note || '<p>Ehhez a témakörhöz még nem készült el a részletes tananyag.</p>'}
+                </div>
+
+                ${conceptHTML}
+
+                <div style="text-align: center; margin-top: 40px;">
+                    <button class="ans-btn" style="border-color: var(--grass); display: inline-block; width: auto; padding: 15px 40px;" onclick="closeTananyag()">Értem, mehet a játék! 🚀</button>
+                </div>
+            `;
+            overlay.classList.add('open');
+        }
+
+        function closeTananyag() {
+            document.getElementById('tananyagOverlay').classList.remove('open');
+        }
+
+        function closeTananyagOnBg(e) {
+            if(e.target.id === 'tananyagOverlay') closeTananyag();
+        }
+
+        // Particle Theme System
+        const THEMES = {
+            fuves: { color: '#22c55e', particles: 20, emoji: '🌿' },
+            vizek: { color: '#38bdf8', particles: 25, emoji: '💧' },
+            fold: { color: '#a855f7', particles: 20, emoji: '✨' }
+        };
+
+        function applyTheme(id) {
+            const deco = document.getElementById('bgDeco');
+            const edeco = document.getElementById('bgEmojiDeco');
+            deco.innerHTML = ''; edeco.innerHTML = '';
+            const t = THEMES[id] || { color: '#4f46e5', particles: 15, emoji: '✨' };
+            const colors = [t.color, '#ffffff', '#7c3aed'];
+            for(let i=0; i<t.particles; i++) {
+                const p = document.createElement('div');
+                p.className = 'particle';
+                const sz = Math.random() * 4 + 2;
+                p.style.cssText = `width:${sz}px;height:${sz}px;left:${Math.random()*100}vw;background:${colors[Math.floor(Math.random()*3)]};animation-duration:${5+Math.random()*10}s;animation-delay:${Math.random()*5}s;`;
+                deco.appendChild(p);
+            }
+        }
+
+        showBigTopics();
+    </script>
+</body>
+</html
